@@ -1,0 +1,1404 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Heart, Backpack, Map as MapIcon, Scroll, Skull, ArrowRight, Sword, Sparkles, Anchor, Mountain, Hammer, FlaskConical, CircleDot, HelpCircle, Sun, Snowflake, Gem, Coins, DoorOpen, Eye, Shield, Beer, Utensils, Key, Flame, Settings, Ghost, Pickaxe, Tent, Footprints, Waves, Bug } from 'lucide-react';
+
+// --- STYLY A FONTY ---
+const fontsLink = document.createElement('link');
+fontsLink.href = 'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&display=swap';
+fontsLink.rel = 'stylesheet';
+document.head.appendChild(fontsLink);
+
+// --- DATA PŘÍBĚHU ---
+const storyData = {
+  // --- KAPITOLA 1: SKÁLOPÁD ---
+  start: {
+    id: 'start',
+    title: '1. Náměstí v šeru',
+    text: 'Dorazil jsi na náměstí hornického města Skálopád. Světlo je tu šedivé a mdlé, z obrovské skalní průrvy "Chřtán" stoupá černá mlha páchnoucí sírou. Domy mají zatažené okenice, ulice jsou prázdné.\n\nSáhneš do kapsy. Máš 5 zlaťáků. Víš, že tvá cesta vede na východ skrz Mechanickou bránu, ale ta je zavřená a poškozená. Musíš se vybavit na cestu do hor a najít způsob, jak bránu otevřít.',
+    imageType: 'town',
+    choices: [
+      { text: 'Vetešnictví „Straka“', target: 'shop_straka' },
+      { text: 'Krčma „U Zlomené mince“', target: 'tavern' },
+      { text: 'Alchymistická dílna', target: 'alchemist' },
+      { text: 'Temné zákoutí', target: 'dark_alley' },
+      { text: 'Opuštěný dům na kopci', target: 'house_ext' },
+      { text: 'K Městské bráně (Východ)', target: 'gate' }
+    ]
+  },
+  shop_straka: {
+    id: 'shop_straka',
+    title: '2. Vetešnictví „Straka“',
+    text: 'Vetešník Straka si upraví tlusté brýle. „Chystáš se za bránu, do Skal Skálopádu? Bez vercajku nepřežiješ. Koupím cennosti a prodám ti to, co ti zachrání krk.“',
+    imageType: 'shop',
+    choices: [
+      { text: 'Koupit Páčidlo', target: 'shop_straka', cost: 3, loot: 'Páčidlo', reqGold: 3 },
+      { text: 'Koupit Horolezecký cepín', target: 'shop_straka', cost: 4, loot: 'Horolezecký cepín', reqGold: 4 },
+      { text: 'Koupit Pevné lano', target: 'shop_straka', cost: 2, loot: 'Pevné lano', reqGold: 2 },
+      { text: 'Koupit Starou mapu dolů', target: 'shop_straka', cost: 2, loot: 'Stará mapa dolů', reqGold: 2 },
+      { text: 'Koupit Rezavý klíč', target: 'shop_straka', cost: 1, loot: 'Rezavý klíč', reqGold: 1 },
+      { text: 'Prodat Zlatý prsten', target: 'shop_straka', lootGold: 5, removeItem: 'Zlatý prsten', req: 'Zlatý prsten' },
+      { text: 'Prodat Vlčí kožich', target: 'shop_straka', lootGold: 4, removeItem: 'Vlčí kožich', req: 'Vlčí kožich' },
+      { text: 'Odejít na náměstí', target: 'start' }
+    ]
+  },
+  tavern: {
+    id: 'tavern',
+    title: '3. Krčma „U Zlomené mince“',
+    text: 'Uvnitř je kouř a šero. U jednoho stolu se pije pivo, u druhého v rohu sedí hazardní hráč Kostěj a míchá karty.',
+    imageType: 'inn',
+    choices: [
+      { text: 'Jít ke stolu za Kostějem', target: 'tavern_kostej' },
+      { text: 'Koupit Pivo', target: 'tavern', cost: 1, loot: 'Pivo', reqGold: 1 },
+      { text: 'Odejít na náměstí', target: 'start' }
+    ]
+  },
+  tavern_kostej: {
+    id: 'tavern_kostej',
+    title: 'U Kostějova stolu',
+    text: 'Kostěj se zazubí zlatými zuby: „Chceš zkusit štěstí? Každá hádanka stojí zlaťák. Když uhodneš, dostaneš dva. Když prohraješ, můžeš to zkusit znovu... za další zlaťák.“',
+    imageType: 'inn',
+    choices: [
+      { text: 'Hádanka č. 1', target: 'riddle_1', cost: 1, reqGold: 1, reqOpen: 'riddle_1_solved' },
+      { text: 'Hádanka č. 2', target: 'riddle_2', cost: 1, reqGold: 1, reqOpen: 'riddle_2_solved' },
+      { text: 'Hádanka č. 3', target: 'riddle_3', cost: 1, reqGold: 1, reqOpen: 'riddle_3_solved' },
+      { text: 'Hádanka č. 4', target: 'riddle_4', cost: 1, reqGold: 1, reqOpen: 'riddle_4_solved' },
+      { text: 'Hádanka č. 5', target: 'riddle_5', cost: 1, reqGold: 1, reqOpen: 'riddle_5_solved' },
+      { text: 'Hádanka č. 6', target: 'riddle_6', cost: 1, reqGold: 1, reqOpen: 'riddle_6_solved' },
+      { text: 'Hádanka č. 7', target: 'riddle_7', cost: 1, reqGold: 1, reqOpen: 'riddle_7_solved' },
+      { text: 'Zpět k výčepu', target: 'tavern' }
+    ]
+  },
+  tavern_kostej_beaten: {
+    id: 'tavern_kostej_beaten',
+    title: 'Kostějova prohra',
+    text: '„Ty jsi ale chytrá hlava! O tolik peněz mě tu ještě nikdo neobral. Už pro tebe žádnou hádanku nemám.“ Kostěj naštvaně bouchne do stolu a otočí se k tobě zády.',
+    imageType: 'inn',
+    choices: [
+      { text: 'Odejít k výčepu', target: 'tavern' }
+    ]
+  },
+  riddle_1: { id: 'riddle_1', title: 'Hádanka č. 1', text: '„Má to hlavu jako kočka, má to nohy jako kočka, má to ocas jako kočka, mňouká to jako kočka, a není to kočka.“', imageType: 'riddle', inputType: 'text', correctAnswers: ['kocour'], successTarget: 'riddle_win', failureTarget: 'riddle_lose', winGold: 2 },
+  riddle_2: { id: 'riddle_2', title: 'Hádanka č. 2', text: '„Když šel tam, do hlavy ho tloukli, když šel ven, za krk ho tahali.“', imageType: 'riddle', inputType: 'text', correctAnswers: ['hřebík', 'hrebik'], successTarget: 'riddle_win', failureTarget: 'riddle_lose', winGold: 2 },
+  riddle_3: { id: 'riddle_3', title: 'Hádanka č. 3', text: '„Stojí, stojí židle v lese, žádný si ji neodnese.“', imageType: 'riddle', inputType: 'text', correctAnswers: ['pařez', 'parez'], successTarget: 'riddle_win', failureTarget: 'riddle_lose', winGold: 2 },
+  riddle_4: { id: 'riddle_4', title: 'Hádanka č. 4', text: '„Nemotora skoro slepý, hlína se mu na nos lepí. Pracuje i v neděli, razí v zemi tunely.“', imageType: 'riddle', inputType: 'text', correctAnswers: ['krtek'], successTarget: 'riddle_win', failureTarget: 'riddle_lose', winGold: 2 },
+  riddle_5: { id: 'riddle_5', title: 'Hádanka č. 5', text: '„Visí to a neví kde, bije to a neví koho, ukazuje to a neví kam, počítá a neví kolik.“', imageType: 'riddle', inputType: 'text', correctAnswers: ['hodiny'], successTarget: 'riddle_win', failureTarget: 'riddle_lose', winGold: 2 },
+  riddle_6: { id: 'riddle_6', title: 'Hádanka č. 6', text: '„Má sto jehel, žádnou nit. Umí dupat, ne však šít.“', imageType: 'riddle', inputType: 'text', correctAnswers: ['ježek', 'jezek'], successTarget: 'riddle_win', failureTarget: 'riddle_lose', winGold: 2 },
+  riddle_7: { id: 'riddle_7', title: 'Hádanka č. 7', text: '„Kdo mne má v kapse, nemá v ní nic. Co jsem?“', imageType: 'riddle', inputType: 'text', correctAnswers: ['díra', 'dira'], successTarget: 'riddle_win', failureTarget: 'riddle_lose', winGold: 2 },
+  riddle_win: { id: 'riddle_win', title: 'Výhra!', text: '„Máš chytrou hlavu,“ uznale kývne Kostěj a vyplatí ti výhru (2 zl).', imageType: 'coins', choices: [{ text: 'Zkusit další', target: 'tavern_kostej' }] },
+  riddle_lose: { id: 'riddle_lose', title: 'Prohra', text: 'Kostěj se zasměje. „Špatně! Zlaťák je můj.“', imageType: 'inn', choices: [{ text: 'Zkusit to znovu', target: 'tavern_kostej' }] },
+  alchemist: {
+    id: 'alchemist',
+    title: '4. Alchymistická dílna',
+    text: 'Alchymistka míchá obsah kotlíku. „Ta černota v Chřtánu je hladová. Pohlcuje obyčejné světlo. Budeš potřebovat mé zboží.“',
+    imageType: 'herbalist',
+    choices: [
+      { text: 'Koupit Bludičkovu lucernu', target: 'alchemist', cost: 3, loot: 'Bludičkova lucerna', reqGold: 3 },
+      { text: 'Koupit Lektvar Štěstí', target: 'alchemist', cost: 2, loot: 'Lektvar Štěstí', reqGold: 2 },
+      { text: 'Koupit Lektvar Síly', target: 'alchemist', cost: 2, loot: 'Lektvar síly', reqGold: 2 },
+      { text: 'Koupit Lektvar Zdraví', target: 'alchemist', cost: 2, loot: 'Lektvar zdraví', reqGold: 2 },
+      { text: 'Odejít na náměstí', target: 'start' }
+    ]
+  },
+  dark_alley: {
+    id: 'dark_alley',
+    title: '5. Temné zákoutí',
+    text: 'Krysa na tebe sykne ze stínu. „Straka je zloděj. Já mám lidové ceny. Koupím všechno, prodám všechno.“',
+    imageType: 'alley',
+    choices: [
+      { text: 'Koupit Kámen pro štěstí', target: 'dark_alley', cost: 1, loot: 'Kámen pro štěstí', reqGold: 1 },
+      { text: 'Koupit Ohořelou svíčku', target: 'dark_alley', cost: 1, loot: 'Ohořelá svíčka', reqGold: 1 },
+      { text: 'Koupit Zpuchřelé lano', target: 'dark_alley', cost: 1, loot: 'Zpuchřelé lano', reqGold: 1 },
+      { text: 'Koupit Sušenou žábu', target: 'dark_alley', cost: 1, loot: 'Sušená žába', reqGold: 1 },
+      { text: 'Prodat Zlatý prsten', target: 'dark_alley', lootGold: 2, removeItem: 'Zlatý prsten', req: 'Zlatý prsten' },
+      { text: 'Prodat Vlčí kožich', target: 'dark_alley', lootGold: 1, removeItem: 'Vlčí kožich', req: 'Vlčí kožich' },
+      { text: 'Prodat Páčidlo', target: 'dark_alley', lootGold: 1, removeItem: 'Páčidlo', req: 'Páčidlo' },
+      { text: 'Odejít na náměstí', target: 'start' }
+    ]
+  },
+  house_ext: {
+    id: 'house_ext',
+    title: '6. Opuštěný dům',
+    text: 'Dům vypadá jako mrtvola. Dveře jsou křížem krážem zabité silnými dubovými prkny.',
+    imageType: 'house',
+    choices: [
+      { text: 'Vstoupit dovnitř (Dveře jsou otevřené)', target: 'house_int', reqClosed: 'house_unlocked' },
+      { text: 'Použít PÁČIDLO', target: 'house_int', req: 'Páčidlo', reqOpen: 'house_unlocked', closeLoc: 'house_unlocked' },
+      { text: 'Zkusit dveře vykopnout', target: 'house_kick', damage: 1, reqOpen: 'house_unlocked' },
+      { text: 'Vrátit se na náměstí', target: 'start' }
+    ]
+  },
+  house_kick: { id: 'house_kick', title: 'Bolestivý pokus', text: 'Rozběhneš se a kopneš. Dveře drží jako skála, tvůj kotník křupne. Dovnitř se nedostaneš.', imageType: 'house', choices: [{ text: 'Zpět k domu', target: 'house_ext' }] },
+  house_int: {
+    id: 'house_int',
+    title: '7. Vstupní hala',
+    text: 'Stojíš ve vstupní hale starého domu. Vzduch je zatuchlý. V předsíni je starý věšák. Před tebou je obývací pokoj a v rohu žebřík na půdu.',
+    imageType: 'house_int',
+    choices: [
+      { text: 'Vzít VLČÍ KOŽICH z věšáku', target: 'house_int', loot: 'Vlčí kožich', closeLoc: 'coat_taken', reqOpen: 'coat_taken' },
+      { text: 'Prozkoumat Křeslo', target: 'house_chair', reqOpen: 'chair_looted' },
+      { text: 'Vylézt na Půdu', target: 'house_attic', reqOpen: 'attic_looted' },
+      { text: 'Odejít z domu', target: 'start' }
+    ]
+  },
+  house_chair: {
+    id: 'house_chair',
+    title: '8. Staré křeslo',
+    text: 'Stojíš nad starým ušákem. Máš pocit, že uvnitř něco je, ale hmatem nic necítíš.',
+    imageType: 'house_int',
+    choices: [
+      { text: 'Vypít LEKTVAR ŠTĚSTÍ a hledat', target: 'house_chair_luck', req: 'Lektvar Štěstí', removeItem: 'Lektvar Štěstí', loot: 'Zlatý prsten' },
+      { text: 'Pohladit KÁMEN PRO ŠTĚSTÍ a hledat', target: 'house_chair_stone', req: 'Kámen pro štěstí' },
+      { text: 'Prohledat to jen tak rukama', target: 'house_chair_fail' },
+      { text: 'Nechat to být a jít zpět', target: 'house_int' }
+    ]
+  },
+  house_chair_luck: { 
+    id: 'house_chair_luck', 
+    title: 'Magický nález', 
+    text: 'Vypiješ lektvar. Svět se rozzáří! Všimneš si nenápadného hrbolku. Rozpářeš látku a najdeš ZLATÝ PRSTEN s rubínem!', 
+    imageType: 'treasure', 
+    choices: [{ text: 'Paráda! (Zpět do haly)', target: 'house_int', closeLoc: 'chair_looted' }] 
+  },
+  house_chair_stone: { id: 'house_chair_stone', title: 'Falešné štěstí', text: 'Hladíš "magický" kámen, ale nic se nestane. Je studený a jen ti překáží v ruce. Kámen od Krysy byl podvod.', imageType: 'house_int', choices: [{ text: 'Zpět do haly', target: 'house_int' }] },
+  house_chair_fail: { id: 'house_chair_fail', title: 'Nic tu není', text: 'Hraběš se v prachu. Kromě mrtvých molů a starého špendlíku tu nic není.', imageType: 'house_int', choices: [{ text: 'Zpět do haly', target: 'house_int' }] },
+  house_attic: {
+    id: 'house_attic',
+    title: '9. Půda',
+    text: 'Na půdě je truhla s číselným zámkem. Rovnice:\n(NOHY PAVOUKA x OKO KYKLOPA) - PRSTY JEDNÉ RUKY = ?',
+    imageType: 'riddle',
+    inputType: 'number',
+    correctAnswers: ['3'],
+    successTarget: 'attic_win',
+    failureTarget: 'attic_fail',
+    winLoot: 'Ozubené kolo',
+    failDamage: 1,
+    choices: [{ text: 'Slézt dolů', target: 'house_int' }]
+  },
+  attic_fail: { id: 'attic_fail', title: 'Past!', text: 'CVAK. Zámek se zasekne a vyletí otrávená šipka! Zkus to znovu.', imageType: 'house_int', choices: [{ text: 'Zkusit znovu', target: 'house_attic' }] },
+  attic_win: { 
+    id: 'attic_win', 
+    title: 'Otevřeno!', 
+    text: 'Počítáš: 8 (pavouk) x 1 (kyklop) - 5 (prsty) = 3.\nVíko odskočí. Uvnitř leží těžké bronzové OZUBENÉ KOLO.', 
+    imageType: 'treasure', 
+    choices: [{ text: 'Vzít kolo a slézt dolů', target: 'house_int', closeLoc: 'attic_looted' }] 
+  },
+  gate: {
+    id: 'gate',
+    title: '10. Městská brána',
+    text: 'Stojíš před masivní bránou. Mechanismus je poškozený, chybí v něm hlavní součástka.',
+    imageType: 'gate',
+    choices: [
+      { text: 'Vložit OZUBENÉ KOLO', target: 'chapter_end', req: 'Ozubené kolo', removeItem: 'Ozubené kolo' },
+      { text: 'Vrátit se na náměstí', target: 'start' }
+    ]
+  },
+  chapter_end: {
+    id: 'chapter_end',
+    title: 'Konec 1. Kapitoly',
+    text: 'Kolo zapadne. SKŘÍÍÍP! Brána se s duněním zvedá. Cesta z města je volná. Před tebou se tyčí mrazivé Skály Skálopádu.',
+    imageType: 'victory',
+    choices: [
+      { text: 'Vykročit ven (Kapitola 2)', target: 'crossroads_11' }
+    ]
+  },
+
+  // --- KAPITOLA 2: VE STÍNU SKÁLOPÁDU ---
+  crossroads_11: {
+    id: 'crossroads_11',
+    title: '11. Rozcestí za bránou',
+    text: 'Sotva projdeš bránou, těžká křídla zapadnou. BUM! Cesta zpět je uzavřená. Ocitl ses na úzké římse. Vzduch je mrazivý. Před tebou se tyčí Skály Skálopádu, cesta stoupá vzhůru. Kolem hradeb ale vedou stezky vpravo i vlevo.',
+    imageType: 'mountains',
+    choices: [
+      { text: 'Vydat se přímo vzhůru do skal', target: 'ch3_check' }, 
+      { text: 'Jít VPRAVO ke zřícené věži', target: 'loc_tower' },
+      { text: 'Jít VLEVO k opuštěnému táboru', target: 'loc_camp' }
+    ]
+  },
+
+  // --- 12. VĚŽ (A) ---
+  loc_tower: {
+    id: 'loc_tower',
+    title: '12. Zřícená strážní věž',
+    text: 'Dojdeš k hromadě suti. Uprostřed trosek leží kostlivec vojáka, který křečovitě svírá madlo vojenské truhlice.',
+    imageType: 'ruins',
+    choices: [
+      { text: 'Použít PÁČIDLO', target: 'tower_success', req: 'Páčidlo', reqOpen: 'tower_looted' },
+      { text: 'Použít REZAVÝ KLÍČ', target: 'tower_fail_key', req: 'Rezavý klíč', removeItem: 'Rezavý klíč', reqOpen: 'tower_looted' },
+      { text: 'Zkusit to rukama', target: 'tower_fail_hands', reqOpen: 'tower_looted' },
+      { text: 'Pokračovat vpravo (Hřbitov)', target: 'loc_cemetery' },
+      { text: 'Vrátit se na Rozcestí', target: 'crossroads_11' }
+    ]
+  },
+  tower_success: {
+    id: 'tower_success',
+    title: 'Úspěch!',
+    text: 'KŘUP! Petlice odlétne. Uvnitř leží kožený měšec s žoldem. (Získal jsi 3 zlaťáky).',
+    imageType: 'coins',
+    choices: [{ text: 'Zpět k ruinám', target: 'loc_tower', lootGold: 3, closeLoc: 'tower_looted' }]
+  },
+  tower_fail_key: {
+    id: 'tower_fail_key',
+    title: 'Křup!',
+    text: 'Zatočíš klíčem... CVAK. Klíč se zlomil! Vetešník tě napálil. Zámek je v pořádku, ale klíč je na kusy.',
+    imageType: 'ruins',
+    choices: [{ text: 'Zahodit úlomek', target: 'loc_tower' }]
+  },
+  tower_fail_hands: {
+    id: 'tower_fail_hands',
+    title: 'Marná snaha',
+    text: 'Taháš za víko, až máš prsty do krve. Bez nářadí to nepůjde.',
+    imageType: 'ruins',
+    choices: [{ text: 'Zpět', target: 'loc_tower' }]
+  },
+
+  // --- 13. HŘBITOV (B) ---
+  loc_cemetery: {
+    id: 'loc_cemetery',
+    title: '13. Starý hřbitov',
+    text: 'Mlha, chlad a ticho. Kolem cesty se tyčí hrubé náhrobky. Najednou se mlha zavlní a stíny se protáhnou. Cítíš ledový dech.',
+    imageType: 'cemetery',
+    choices: [
+      { text: 'Použít BLUDIČKOVU LUCERNU', target: 'cemetery_success', req: 'Bludičkova lucerna', reqOpen: 'cemetery_cleared' },
+      { text: 'Použít OHOŘELOU SVÍČKU', target: 'cemetery_fail', req: 'Ohořelá svíčka', reqOpen: 'cemetery_cleared', damage: 2 },
+      { text: 'Utéct tmou', target: 'cemetery_fail', reqOpen: 'cemetery_cleared', damage: 2 },
+      { text: 'Pokračovat vpravo (Vodopád)', target: 'loc_waterfall' },
+      { text: 'Pokračovat vlevo (Věž)', target: 'loc_tower' }
+    ]
+  },
+  cemetery_success: {
+    id: 'cemetery_success',
+    title: 'Světlo v temnotách',
+    text: 'Modré světlo prozáří mlhu. Stíny se stáhnou. Na jednom kříži najdeš zapomenutý STŘÍBRNÝ AMULET.',
+    imageType: 'treasure',
+    choices: [{ text: 'Vzít amulet', target: 'loc_cemetery', loot: 'Stříbrný amulet', closeLoc: 'cemetery_cleared' }]
+  },
+  cemetery_fail: {
+    id: 'cemetery_fail',
+    title: 'Útok stínů!',
+    text: 'Jsi ve tmě! Stíny útočí ledovými drápy. V panice běžíš pryč, potlučený a vyděšený.',
+    imageType: 'cemetery',
+    choices: [{ text: 'Vydechnout si', target: 'loc_cemetery', closeLoc: 'cemetery_cleared' }]
+  },
+
+  // --- 14. VODOPÁD (C) ---
+  loc_waterfall: {
+    id: 'loc_waterfall',
+    title: '14. Zmrzlý vodopád',
+    text: 'Cesta vede přes zledovatělý splaz končící v propasti. Uprostřed ledu se leskne malá zelená lahvička.',
+    imageType: 'waterfall',
+    choices: [
+      { text: 'Použít HOROLEZECKÝ CEPÍN', target: 'waterfall_success', req: 'Horolezecký cepín', reqOpen: 'waterfall_looted' },
+      { text: 'Pohladit KÁMEN PRO ŠTĚSTÍ', target: 'waterfall_fail_stone', req: 'Kámen pro štěstí', reqOpen: 'waterfall_looted' },
+      { text: 'Zkusit to bez vybavení (RISK)', target: 'waterfall_roll', reqOpen: 'waterfall_looted', randomTargets: [{target: 'waterfall_fail_odd', weight: 0.5}, {target: 'waterfall_fail_even', weight: 0.5}] },
+      { text: 'Pokračovat vpravo (Tábor)', target: 'loc_camp' },
+      { text: 'Pokračovat vlevo (Hřbitov)', target: 'loc_cemetery' }
+    ]
+  },
+  waterfall_success: {
+    id: 'waterfall_success',
+    title: 'Jistý krok',
+    text: 'KŘUP! Cepín se zasekne do ledu. Bezpečně dojdeš pro LAHVIČKU S JEDEM.',
+    imageType: 'treasure',
+    choices: [{ text: 'Vzít lahvičku', target: 'loc_waterfall', loot: 'Lahvička s jedem', closeLoc: 'waterfall_looted' }]
+  },
+  waterfall_fail_stone: {
+    id: 'waterfall_fail_stone',
+    title: 'Kluzké štěstí',
+    text: 'Kámen nepomohl. Noha ti podjede, ale aspoň ses o něj opřel a nespadl dolů. Nic jsi nezískal.',
+    imageType: 'waterfall',
+    choices: [{ text: 'Zpět na kraj', target: 'loc_waterfall' }]
+  },
+  waterfall_fail_odd: {
+    id: 'waterfall_fail_odd',
+    title: 'Smůla!',
+    text: 'Noha ti ujela! Na poslední chvíli ses zachytil kořene, ale bolestivě sis narazil.',
+    imageType: 'waterfall',
+    choices: [{ text: 'Vyškrábat se zpět', target: 'loc_waterfall', damage: 1 }]
+  },
+  waterfall_fail_even: {
+    id: 'waterfall_fail_even',
+    title: 'Velká smůla!',
+    text: 'PRÁSK! Tvrdě jsi dopadl na záda a sjel k okraji propasti. Jsi potlučený.',
+    imageType: 'waterfall',
+    choices: [{ text: 'Vyškrábat se zpět', target: 'loc_waterfall', damage: 2 }]
+  },
+
+  // --- 15. TÁBOR (D) ---
+  loc_camp: {
+    id: 'loc_camp',
+    title: '15. Vybydlený tábor',
+    text: 'Pod skalním převisem najdeš zbytky stanů. Zřejmě tu žili uprchlíci. Teď tu není nikdo, jen sníh.',
+    imageType: 'camp', 
+    choices: [
+      { text: 'Prohledat stany', target: 'camp_loot', reqOpen: 'camp_looted' },
+      { text: 'Pokračovat vpravo (Rozcestí)', target: 'crossroads_11' },
+      { text: 'Pokračovat vlevo (Vodopád)', target: 'loc_waterfall' }
+    ]
+  },
+  camp_loot: {
+    id: 'camp_loot',
+    title: 'Nález',
+    text: 'V jednom stanu najdeš kožený váček. Je v něm SUŠENÉ MASO. Tvrdé, ale výživné.',
+    imageType: 'treasure',
+    choices: [
+      { text: 'Sníst maso hned', target: 'loc_camp', loot: 'Sušené maso', closeLoc: 'camp_looted' }, 
+      { text: 'Schovat na později', target: 'loc_camp', loot: 'Sušené maso', closeLoc: 'camp_looted' }
+    ]
+  },
+
+  // --- KAPITOLA 3: CESTA DO SKAL ---
+  ch3_warm: {
+    id: 'ch3_warm',
+    title: '16. Úpatí smrti (V teple)',
+    text: 'Cesta se mění v úzkou kozí stezku. Černá mlha houstne a vítr řve. Instinktivně si přitáhneš Vlčí kožich k tělu. Smrdí sice, ale hřeje dokonale. Tvé tělo zůstává v teple.\n\nPo hodině dojdeš k Velkému závalu. Cesta končí. Musíš najít jinou trasu.',
+    imageType: 'mountains',
+    choices: [
+      { text: 'Vylézt po Ledové stěně', target: 'ice_wall' },
+      { text: 'Přejít Průrvu stínů', target: 'shadow_gap' },
+      { text: 'Prolézt Pašeráckou dírou', target: 'smuggler_hole' }
+    ]
+  },
+  ch3_cold: {
+    id: 'ch3_cold',
+    title: '16. Úpatí smrti (Mráz)',
+    text: 'Cesta se mění v úzkou kozí stezku. Mráz ti okamžitě pronikne skrz tenké šaty až do morku kostí. Drkotáš zuby a nekontrolovatelně se třeseš. Ztrácíš síly podchlazením!\n\nS vypětím sil dojdeš k Velkému závalu. Musíš dál, nebo umrzneš.',
+    imageType: 'snowflake',
+    choices: [
+      { text: 'Vylézt po Ledové stěně', target: 'ice_wall' },
+      { text: 'Přejít Průrvu stínů', target: 'shadow_gap' },
+      { text: 'Prolézt Pašeráckou dírou', target: 'smuggler_hole' }
+    ]
+  },
+
+  // 17. LEDOVÁ STĚNA
+  ice_wall: {
+    id: 'ice_wall',
+    title: '17. Ledová stěna',
+    text: 'Kolmá stěna pokrytá černým ledem. Hladká jako sklo. Holýma rukama se tu neudržíš.',
+    imageType: 'icewall',
+    choices: [
+      { text: 'Použít HOROLEZECKÝ CEPÍN', target: 'iw_success', req: 'Horolezecký cepín' },
+      { text: 'Pohladit KÁMEN PRO ŠTĚSTÍ', target: 'iw_fail_stone', req: 'Kámen pro štěstí' },
+      { text: 'Zkusit to bez vybavení', target: 'iw_fail_climb', damage: 1 },
+      { text: 'Zkusit jinou cestu', target: 'ch3_return' }
+    ]
+  },
+  iw_success: {
+    id: 'iw_success',
+    title: 'Výstup',
+    text: 'KŘUP! Ocelový hrot drží. Krok za krokem stoupáš vzhůru. Svaly pálí, ale cepín tě jistí. Vyškrábeš se na římsu nad závalem.',
+    imageType: 'mountains',
+    choices: [{ text: 'Pokračovat', target: 'rock_face' }]
+  },
+  iw_fail_stone: {
+    id: 'iw_fail_stone',
+    title: 'Klouže to',
+    text: '„Neklouzej!“ prosíš kámen. Položíš ruku na led... a málem spadneš. Kámen ti zůstal, ale důstojnost ne.',
+    imageType: 'icewall',
+    choices: [{ text: 'Zkusit něco jiného', target: 'ice_wall' }]
+  },
+  iw_fail_climb: {
+    id: 'iw_fail_climb',
+    title: 'Pád',
+    text: 'Je to šílenství. Prsty ti po ledu sjedou. Sklouzneš se a bolestivě si odřeš ruce o ostrý led. Tudy to bez nástroje nepůjde.',
+    imageType: 'icewall',
+    choices: [{ text: 'Zpět pod zával', target: 'ch3_return' }]
+  },
+
+  // 18. PRŮRVA STÍNŮ
+  shadow_gap: {
+    id: 'shadow_gap',
+    title: '18. Průrva stínů',
+    text: 'Hluboká skalní trhlina. Most je stržený, jeho zbytky visí na druhé straně jako žebřík. Musíš slanit dolů a vylézt nahoru.',
+    imageType: 'gap',
+    choices: [
+      { text: 'Použít PEVNÉ LANO', target: 'sg_success', req: 'Pevné lano', removeItem: 'Pevné lano' },
+      { text: 'Použít ZPUCHŘELÉ LANO', target: 'sg_risk', req: 'Zpuchřelé lano', removeItem: 'Zpuchřelé lano', randomTargets: [{target: 'sg_fail_odd', weight: 0.5}, {target: 'sg_fail_even', weight: 0.5}] },
+      { text: 'Pohladit KÁMEN PRO ŠTĚSTÍ', target: 'sg_stone_lost', req: 'Kámen pro štěstí', removeItem: 'Kámen pro štěstí' },
+      { text: 'Zkusit jinou cestu (Bez lana to nejde)', target: 'ch3_return' }
+    ]
+  },
+  sg_success: {
+    id: 'sg_success',
+    title: 'Bezpečné slanění',
+    text: 'Pevné konopí drží. Slaníš na dno, přejdeš a vyšplháš po troskách mostu nahoru. Lano jsi musel nechat uvázané na startu.',
+    imageType: 'mountains',
+    choices: [{ text: 'Pokračovat', target: 'rock_face' }]
+  },
+  sg_risk: { id: 'sg_risk', title: 'Prásk!', text: 'Slaňuješ... Lano se napíná... PRÁSK! Lano nevydrželo. Padáš!', imageType: 'gap' },
+  sg_fail_odd: {
+    id: 'sg_fail_odd',
+    title: 'Au!',
+    text: 'Dopadl jsi špatně na kotník. Křupnutí slyšíš až v uších. V bolestech se doplazíš nahoru.',
+    imageType: 'gap',
+    choices: [{ text: 'Kulhat dál', target: 'rock_face', damage: 2 }]
+  },
+  sg_fail_even: {
+    id: 'sg_fail_even',
+    title: 'Štěstí v neštěstí',
+    text: 'Dopadl jsi do závěje sněhu! Máš jen pár modřin. Vyklepeš se a vyšplháš nahoru.',
+    imageType: 'snowflake',
+    choices: [{ text: 'Uff... Pokračovat', target: 'rock_face' }]
+  },
+  sg_stone_lost: {
+    id: 'sg_stone_lost',
+    title: 'Kámen letí',
+    text: 'Hodíš kámen dolů, aby ukázal cestu. TUP. Leží na dně. „Skvělý,“ zamumláš. „Teď je kámen dole a já nahoře.“',
+    imageType: 'gap',
+    choices: [{ text: 'Zpět', target: 'shadow_gap' }]
+  },
+
+  // 19. PAŠERÁCKÁ DÍRA
+  smuggler_hole: {
+    id: 'smuggler_hole',
+    title: '19. Pašerácká díra',
+    text: 'Úzká prasklina. Musíš se plazit. Je tu tma a slyšíš divné zvuky: Chrr... cvak... cvak...',
+    imageType: 'hole',
+    choices: [
+      { text: 'Použít BLUDIČKOVU LUCERNU', target: 'sh_success', req: 'Bludičkova lucerna' },
+      { text: 'Použít OHOŘELOU SVÍČKU', target: 'sh_fail_candle', req: 'Ohořelá svíčka', damage: 2 },
+      { text: 'Vlézt tam po tmě', target: 'sh_fail_dark', damage: 1 }
+    ]
+  },
+  sh_success: {
+    id: 'sh_success',
+    title: 'Pavoučí doupě',
+    text: 'Modré světlo odhalí koberce spících Obřích pavouků! Světlo je udržuje v letargii. Opatrně prokličkuješ. Cestou najdeš u kostry LEKTVAR SÍLY!',
+    imageType: 'treasure',
+    choices: [{ text: 'Vylézt ven', target: 'rock_face', loot: 'Lektvar síly' }]
+  },
+  sh_fail_candle: {
+    id: 'sh_fail_candle',
+    title: 'Zhaslo to!',
+    text: 'Průvan sfoukl svíčku! Pavouci se probudili. Cítíš ostrá kousnutí a jed. V panice proběhneš na druhou stranu.',
+    imageType: 'hole',
+    choices: [{ text: 'Vypadnout ven (Jsi otráven)', target: 'rock_face' }]
+  },
+  sh_fail_dark: {
+    id: 'sh_fail_dark',
+    title: 'Fuj!',
+    text: 'Vrazíš obličejem do pavučiny. Cítíš chlupaté nohy. V panice vycouváš ven.',
+    imageType: 'hole',
+    choices: [{ text: 'Zpět před díru', target: 'ch3_return' }]
+  },
+
+  // Návrat na rozcestí v horách
+  ch3_return: {
+    id: 'ch3_return',
+    title: 'Zpět pod závalem',
+    text: 'Musíš vybrat jinou cestu.',
+    imageType: 'mountains',
+    choices: [
+      { text: 'Vylézt po Ledové stěně', target: 'ice_wall' },
+      { text: 'Přejít Průrvu stínů', target: 'shadow_gap' },
+      { text: 'Prolézt Pašeráckou dírou', target: 'smuggler_hole' }
+    ]
+  },
+
+  // 20. SKALNÍ TVÁŘ
+  rock_face: {
+    id: 'rock_face',
+    title: '20. Skalní tvář',
+    text: 'Před tebou je obrovská tvář trpasličího předka. Má otevřená ústa (tunel) a jedno oko je prázdný důlek. Nápis hlásá: „Jen ti, kdo uctí památku padlých, projdou s požehnáním.“',
+    imageType: 'statue',
+    choices: [
+      { text: 'Vložit STŘÍBRNÝ AMULET', target: 'face_reward', req: 'Stříbrný amulet', removeItem: 'Stříbrný amulet' },
+      { text: 'Vložit KÁMEN PRO ŠTĚSTÍ', target: 'face_fail', req: 'Kámen pro štěstí' },
+      { text: 'Projít tunelem bez povšimnutí', target: 'face_ignore' }
+    ]
+  },
+  face_reward: {
+    id: 'face_reward',
+    title: 'Dar hory',
+    text: 'Amulet zapadne. Socha vydá poklad: STAROBYLÁ RUNOVÁ ZBROJ. Je lehká a pevná. „Díky, poutníku,“ zašeptá vítr.',
+    imageType: 'treasure',
+    choices: [{ text: 'Obléknout a jít dál', target: 'chapter_3_end', loot: 'Runová zbroj' }]
+  },
+  face_fail: {
+    id: 'face_fail',
+    title: 'Trapas',
+    text: 'Vložíš tam bramboru. Socha mlčí, pak kámen vypadne a trefí tě do nohy. „Stálo to za pokus.“',
+    imageType: 'statue',
+    choices: [{ text: 'Sebrat kámen a zkusit něco jiného', target: 'rock_face' }]
+  },
+  face_ignore: {
+    id: 'face_ignore',
+    title: 'Bez požehnání',
+    text: 'Projdeš kolem. Vítr tě srazí na kolena, jako by tě chtěl varovat. Nic jsi nezískal.',
+    imageType: 'statue',
+    choices: [{ text: 'Vstát a jít dál', target: 'chapter_3_end' }]
+  },
+
+  // 21. KONEC KAPITOLY 3
+  chapter_3_end: {
+    id: 'chapter_3_end',
+    title: '21. Brána do Chřtánu',
+    text: 'Stojíš na okraji Chřtánu. Obrovský kráter, dole pulzuje hustá černá tma. Slyšíš dunění jako srdce. Tady končí vláda lidí. Dál vládne jen černočerná mlha.\n\nZkontroluj si vybavení. Další krok už nejde vzít zpět.',
+    imageType: 'crater',
+    choices: [
+      { text: 'Sestoupit do temnoty', target: 'ch4_intro' }
+    ]
+  },
+
+  // --- KAPITOLA 4: SESTUP DO TEMNOTY ---
+  ch4_intro: {
+    id: 'ch4_intro',
+    title: '21. Spirála',
+    text: 'Projdeš ústy kamenné sochy na úzkou římsu. Cesta klesá spirálovitě do hlubin. Vzduch je horký a páchne sírou. Nahoře ještě prosvítá šedé světlo, ale dole čeká absolutní tma. Černá mlha se ti lepí na kůži.',
+    imageType: 'spiral',
+    choices: [
+        { text: 'Sestoupit s rozsvícenou lucernou', target: 'ch4_hub_safe', req: 'Bludičkova lucerna' },
+        { text: 'Sestoupit se zapálenou svíčkou', target: 'ch4_hub_scared', req: 'Ohořelá svíčka' }, 
+        { text: 'Sestoupit do tmy', target: 'ch4_hub_hurt', damage: 2 }
+    ]
+  },
+  ch4_hub_safe: {
+    id: 'ch4_hub_safe',
+    title: '22. Rozcestí v hlubinách',
+    text: 'Tvá lucerna prořízne tmu jako meč. Vidíš jasně každou nerovnost. Sestupuješ rychle a jistě. Temnota před magickým světlem ustupuje.\n\nDorazíš na plošinu, kde se cesta dělí. Vlevo je tunel do dolů, vpravo kamenný oblouk města a v podlaze zrezivělý poklop.',
+    imageType: 'town_fog',
+    choices: [
+      { text: 'Jít vlevo do Starých dolů', target: 'ch4_mines' },
+      { text: 'Jít vpravo do Zapomenutého města', target: 'ch4_city' },
+      { text: 'Otevřít poklop (Páčidlo)', target: 'ch4_shaft_entry', req: 'Páčidlo' }
+    ]
+  },
+  ch4_hub_scared: {
+    id: 'ch4_hub_scared',
+    title: '22. Rozcestí v hlubinách',
+    text: 'Plamínek svíčky se krčí a prská. Stíny kolem tebe tančí. Vidíš sotva na špičky bot. Jdeš nalepený na skálu, srdce v krku. Dorazíš dolů zpocený strachy, ale živý.\n\nJsi na plošině. Vlevo tunel, vpravo město, v podlaze poklop.',
+    imageType: 'town_fog',
+    choices: [
+      { text: 'Jít vlevo do Starých dolů', target: 'ch4_mines' },
+      { text: 'Jít vpravo do Zapomenutého města', target: 'ch4_city' },
+      { text: 'Otevřít poklop (Páčidlo)', target: 'ch4_shaft_entry', req: 'Páčidlo' }
+    ]
+  },
+  ch4_hub_hurt: {
+    id: 'ch4_hub_hurt',
+    title: '22. Rozcestí v hlubinách',
+    text: 'Jdeš jako slepec. Černá mlha tě oslepí. Šlápneš do prázdna... Padáš a kutálíš se po ostrém štěrku. Zastavíš se o kus níž, potlučený a krvácející.\n\nJsi na plošině. Vlevo tunel, vpravo město, v podlaze poklop.',
+    imageType: 'skull',
+    choices: [
+      { text: 'Vstát a jít do Starých dolů', target: 'ch4_mines' },
+      { text: 'Vstát a jít do Města', target: 'ch4_city' },
+      { text: 'Otevřít poklop (Páčidlo)', target: 'ch4_shaft_entry', req: 'Páčidlo' }
+    ]
+  },
+  ch4_mines: {
+    id: 'ch4_mines',
+    title: '23. Staré Doly',
+    text: 'Nízký tunel plný pohozeného nářadí. Po chvíli narazíš na VELKÝ ZÁVAL. Cesta je ucpaná, ale u stropu je škvíra. Musíš uvolnit balvany.',
+    imageType: 'mines',
+    choices: [
+      { text: 'Použít HOROLEZECKÝ CEPÍN', target: 'ch4_mines_success', req: 'Horolezecký cepín' },
+      { text: 'Hrubá síla (Bez vybavení)', target: 'ch4_mines_fail', damage: 2 },
+      { text: 'Pohladit KÁMEN PRO ŠTĚSTÍ', target: 'ch4_mines_stone', req: 'Kámen pro štěstí' }
+    ]
+  },
+  ch4_mines_success: {
+    id: 'ch4_mines_success',
+    title: 'Práce s cepínem',
+    text: 'CINK! BUM! Zasekneš špičku a páčíš. Balvany se sesypou stranou. Protáhneš se bezpečným průlezem.',
+    imageType: 'pickaxe',
+    choices: [{ text: 'Pokračovat', target: 'ch4_end' }]
+  },
+  ch4_mines_fail: {
+    id: 'ch4_mines_fail',
+    title: 'Dřina a krev',
+    text: 'Odhazuješ kameny holýma rukama. Trvá to hodiny. Ruce máš rozedřené. Hluk probudil netopýry, kteří tě pokousali. Padneš na druhé straně vyčerpáním.',
+    imageType: 'skull',
+    choices: [{ text: 'Zvednout se', target: 'ch4_end' }]
+  },
+  ch4_mines_stone: {
+    id: 'ch4_mines_stone',
+    title: 'Kamínek',
+    text: '„Odsuň ty kameny!“ prosíš. Nic se nestane. Jen ti na hlavu spadne malý kamínek.',
+    imageType: 'mines',
+    choices: [{ text: 'Zkusit něco jiného', target: 'ch4_mines' }]
+  },
+  ch4_city: {
+    id: 'ch4_city',
+    title: '24. Zapomenuté město',
+    text: 'Tiché chodby plné prachu. Dojdeš k zamčené bráně zbrojnice. Na dveřích je kamenná tvář a nápis: „Patřím tobě, ale ostatní to používají častěji než ty. Co jsem?“\n\nPod nápisem jsou tlačítka se slovy.',
+    imageType: 'dwarf_city',
+    choices: [
+      { text: 'Stisknout: JMÉNO', target: 'ch4_city_loot' },
+      { text: 'Stisknout: PENÍZE', target: 'ch4_city_dmg', damage: 1 },
+      { text: 'Posvítit si LUCERNOU', target: 'ch4_city_hint', req: 'Bludičkova lucerna' },
+      { text: 'Vrátit se na Rozcestí', target: 'ch4_return_hub' }
+    ]
+  },
+  ch4_city_loot: {
+    id: 'ch4_city_loot',
+    title: 'Správně!',
+    text: 'Kamenná tvář mrkne. Dveře se otevřou. Uvnitř najdeš TRPASLIČÍ ŠTÍT! Je lehký a nezničitelný.',
+    imageType: 'shield',
+    choices: [{ text: 'Vzít štít a jít dál', target: 'ch4_end', loot: 'Trpasličí štít' }]
+  },
+  ch4_city_dmg: {
+    id: 'ch4_city_dmg',
+    title: 'Chamtivče!',
+    text: 'Tvář zařve a vystřelí po tobě kamenné šipky. Dostaneš zásah do žeber.',
+    imageType: 'skull',
+    choices: [{ text: 'Zkusit to znovu', target: 'ch4_city' }]
+  },
+  ch4_city_hint: {
+    id: 'ch4_city_hint',
+    title: 'Tajný nápis',
+    text: 'Modré světlo odhalí vyškrábaný nápis: "Odpověď je Jméno. Heslo neměnili už 300 let."',
+    imageType: 'treasure',
+    choices: [{ text: 'Stisknout JMÉNO', target: 'ch4_city_loot' }]
+  },
+  ch4_shaft_entry: {
+    id: 'ch4_shaft_entry',
+    title: '25. Ventilační šachta',
+    text: 'Páčidlem otevřeš poklop. SKŘÍÍÍP! Z díry vane pach hniloby. Šachta vede kolmo dolů.',
+    imageType: 'shaft',
+    choices: [
+      { text: 'Slanit se pomocí lana', target: 'ch4_shaft_safe', req: 'Pevné lano', removeItem: 'Pevné lano' },
+      { text: 'Slanit se pomocí lana', target: 'ch4_shaft_fail', req: 'Zpuchřelé lano', removeItem: 'Zpuchřelé lano', damage: 2 },
+      { text: 'Zavřít poklop', target: 'ch4_return_hub' }
+    ]
+  },
+  ch4_shaft_safe: {
+    id: 'ch4_shaft_safe',
+    title: 'Hladký sestup',
+    text: 'Lano drží. Slaníš se do tmy, míjíš patra a netopýry. Bezpečně dopadneš do měkkého štěrku dole. Vyhnul jsi se všem nástrahám.',
+    imageType: 'shaft',
+    choices: [{ text: 'Pokračovat', target: 'ch4_end' }]
+  },
+  ch4_shaft_fail: {
+    id: 'ch4_shaft_fail',
+    title: 'Prásk a žbluňk',
+    text: 'Lano prasklo! Padáš tmou... ŽBLUŇK! Dopadneš do hromady hnijícího odpadu. Zachránilo ti to život, ale jsi potlučený a smrdíš.',
+    imageType: 'skull',
+    choices: [{ text: 'Vylézt z odpadků', target: 'ch4_end' }]
+  },
+  ch4_return_hub: {
+    id: 'ch4_return_hub',
+    title: 'Zpět na rozcestí',
+    text: 'Vracíš se na plošinu.',
+    imageType: 'town_fog',
+    choices: [
+      { text: 'Jít vlevo do Starých dolů', target: 'ch4_mines' },
+      { text: 'Jít vpravo do Zapomenutého města', target: 'ch4_city' },
+      { text: 'Otevřít poklop (Páčidlo)', target: 'ch4_shaft_entry', req: 'Páčidlo' }
+    ]
+  },
+  ch4_end: {
+    id: 'ch4_end',
+    title: '26. Příchod k Jezeru',
+    text: 'Vstoupíš do obrovské jeskyně. Většinu podlahy zabírá Černé podzemní jezero. Uprostřed, na ostrůvku, pulzuje Temný Krystal. Je černý a vysílá vlny chladu.\n\nStojíš na břehu. Voda se začne vařit. Z hlubin se vynoří Strážce Hlubin.\n\nJe to hmota černého slizu a kostí. Má pět očí a svalnatá chapadla. BOJ ZAČÍNÁ!',
+    imageType: 'lake',
+    choices: [
+      { text: 'Připravit se k boji', target: 'combat_start' }
+    ]
+  },
+
+  // --- KAPITOLA 5: FINÁLE ---
+  combat_start: {
+    id: 'combat_start',
+    title: '27. Bojová fáze',
+    text: 'Příšera se tyčí nad tebou. Černá voda stříká všude kolem. Musíš jednat rychle.',
+    imageType: 'combat',
+    choices: [
+        { 
+            text: 'Vypít LEKTVAR SÍLY a zaútočit CEPÍNEM', 
+            target: 'res_combo', 
+            req: 'Lektvar síly', 
+            req2: 'Horolezecký cepín',
+            combat: { damageBoss: 2, removePotion: 'Lektvar síly' } 
+        }, 
+        { 
+            text: 'Útok CEPÍNEM', 
+            target: 'res_axe', 
+            req: 'Horolezecký cepín',
+            combat: { damageBoss: 1 } 
+        },
+        { 
+            text: 'Vypít LEKTVAR ŠTĚSTÍ a uhnout', 
+            target: 'res_luck', 
+            req: 'Lektvar Štěstí',
+            combat: { removePotion: 'Lektvar Štěstí', dodgeNext: true }
+        },
+        { 
+            text: 'Útok HOLÝMA RUKAMA', 
+            target: 'res_fist_fail',
+            combat: { selfDamage: 1 }
+        },
+        { 
+            text: 'Hodit KÁMEN PRO ŠTĚSTÍ', 
+            target: 'res_stone_fail', 
+            req: 'Kámen pro štěstí', 
+            removeItem: 'Kámen pro štěstí' 
+        }
+    ]
+  },
+  
+  // Výsledky akcí 1. kola (a dalších, pokud se smyčka opakuje)
+  res_combo: {
+    id: 'res_combo',
+    title: 'Kombo!',
+    text: '„Teď, nebo nikdy!“ Kopneš do sebe lektvar. Cítíš, jak ti svaly tvrdnou na kámen. S řevem se vrhneš proti chapadlu a zasekneš cepín do těla nestvůry. Černá krev stříká jako gejzír.\n\n(POZOR: Efekt lektvaru po tomto útoku vyprchává!)',
+    imageType: 'pickaxe',
+    choices: [{ text: 'Příšera útočí', target: 'combat_boss_turn', combat: { bossAttack: true } }]
+  },
+  res_axe: {
+    id: 'res_axe',
+    title: 'Rychlý sek',
+    text: 'Uskočíš stranou a sekneš cepínem po jeho obnaženém boku. Hrot se zaboří do masa, ale narazí na tuhou svalovinu. I tak teče krev.',
+    imageType: 'pickaxe',
+    choices: [{ text: 'Příšera útočí', target: 'combat_boss_turn', combat: { bossAttack: true } }]
+  },
+  res_luck: {
+    id: 'res_luck',
+    title: 'Šťastné uklouznutí',
+    text: 'Vypiješ zlatý lektvar. Rozběhneš se... a uklouzneš na louži slizu! Díky tomu jsi podjel pod letícím chapadlem, které by ti jinak urazilo hlavu. Bestii jsi neublížil, ale ona tobě taky ne.',
+    imageType: 'treasure',
+    choices: [{ text: 'Vstát', target: 'combat_boss_turn', combat: { bossAttack: true } }]
+  },
+  res_fist_fail: {
+    id: 'res_fist_fail',
+    title: 'Chyba',
+    text: 'Praštíš bestii do krunýře. KŘUP. Bolest ti vystřelí až do ramene. Zlomil sis klouby na ruce. Bestie si toho ani nevšimla.',
+    imageType: 'skull',
+    choices: [{ text: 'Au!', target: 'combat_boss_turn', combat: { bossAttack: true } }]
+  },
+  res_stone_fail: {
+    id: 'res_stone_fail',
+    title: 'TUP',
+    text: 'Mrskneš po ní kámen. Odrazí se od tlustého ramene a spadne na zem. Bestie se na tebe podívá stylem: "To myslíš vážně?"',
+    imageType: 'mountains',
+    choices: [{ text: 'Sebrat kámen', target: 'combat_boss_turn', loot: 'Kámen pro štěstí', alwaysShow: true, combat: { bossAttack: true } }] 
+  },
+
+  // Tah Bosse
+  combat_boss_turn: {
+    id: 'combat_boss_turn',
+    title: '29. Útok Příšery',
+    text: 'Strážce se vzpamatuje. Jeho chapadlo opsalo oblouk a vrací se zpět jako bič. PLÁSK!',
+    imageType: 'combat',
+    choices: [{ text: 'Další kolo', target: 'combat_start' }]
+  },
+  
+  // Fáze 3: Odzbrojení (Boss HP 1)
+  combat_axe_lost: {
+    id: 'combat_axe_lost',
+    title: 'KATASTROFA!',
+    text: 'Příšera nečekaně švihne chapadlem a trefí tě do ruky. Tvůj CEPÍN vyletí a obloukem žbluňkne do jezera!\n\nJsi bez zbraně. Příšera se chystá k poslednímu útoku. Máš jeden tah na to ji dorazit.',
+    imageType: 'skull',
+    choices: [
+        { text: 'Hodit KÁMEN PRO ŠTĚSTÍ', target: 'combat_finisher_stone', req: 'Kámen pro štěstí' },
+        { text: 'Vypít LEKTVAR SÍLY a dorazit ji', target: 'combat_finisher_fists', req: 'Lektvar síly' }, 
+        { text: 'Vypít LEKTVAR ŠTĚSTÍ', target: 'combat_finisher_luck_fail', req: 'Lektvar Štěstí' },
+        { text: 'Nemám nic...', target: 'game_over' }
+    ]
+  },
+  combat_stumble: {
+    id: 'combat_stumble',
+    title: 'ZOUFALÁ SITUACE!',
+    text: 'Příšera nečekaně švihne chapadlem. Rána tě srazí na kolena a vyrazí ti dech! Jsi otřesený.\n\nPříšera se chystá k poslednímu útoku. Máš jeden tah na to ji dorazit, než tě rozmáčkne.',
+    imageType: 'skull',
+    choices: [
+        { text: 'Hodit KÁMEN PRO ŠTĚSTÍ', target: 'combat_finisher_stone', req: 'Kámen pro štěstí' },
+        { text: 'Vypít DALŠÍ LEKTVAR SÍLY a dorazit ji', target: 'combat_finisher_fists', req: 'Lektvar síly' }, 
+        { text: 'Vypít LEKTVAR ŠTĚSTÍ', target: 'combat_finisher_luck_fail', req: 'Lektvar Štěstí' },
+        { text: 'Nemám nic...', target: 'game_over' }
+    ]
+  },
+  combat_finisher_stone: {
+    id: 'combat_finisher_stone',
+    title: 'David a Goliáš',
+    text: 'Vytáhneš kámen. Je to tvá poslední naděje. Zamíříš přesně do největšího oka. FIÚÚÚ... MLASK!\n\nKámen prorazí oko a zaboří se do mozku. Bestie ztuhne a padne. Kámen za zlaťák právě zabil bosse.',
+    imageType: 'victory',
+    choices: [{ text: 'Vítězství!', target: 'scene_30' }]
+  },
+  combat_finisher_fists: {
+    id: 'combat_finisher_fists',
+    title: 'Brutální síla',
+    text: 'Vypiješ svůj POSLEDNÍ lektvar síly. Magie ti znovu napumpuje svaly. Skočíš bestii na záda a jediným úderem pěsti jí rozdrtíš lebku.',
+    imageType: 'victory',
+    choices: [{ text: 'Vítězství!', target: 'scene_30' }]
+  },
+  combat_finisher_luck_fail: {
+    id: 'combat_finisher_luck_fail',
+    title: 'Jen oddálení',
+    text: 'Vypiješ lektvar a zkusíš ji kopnout. Uklouzneš. Bestie máchne a mine tě. Ležíš tam, živý, ale bestie taky. A teď už nemáš nic. V příštím kole tě sežere.',
+    imageType: 'skull',
+    choices: [{ text: 'Konec', target: 'game_over' }]
+  },
+
+  scene_30: {
+    id: 'scene_30',
+    title: '30. Ticho po bitvě',
+    text: 'Strážce Hlubin se rozpadá na černý sliz. Hladina se uklidňuje. Vystoupíš na ostrůvek k Temnému Krystalu.', // Text is dynamic in code
+    imageType: 'lake',
+    choices: [
+        { text: 'Rozhodnout o osudu světa', target: 'scene_31' } 
+    ]
+  },
+  scene_31: {
+    id: 'scene_31',
+    title: '31. Rozhodnutí u Krystalu',
+    text: 'Krystal pulzuje černým světlem. Cítíš z něj chlad. Je čas to skončit. Jak se zapíšeš do historie?',
+    imageType: 'treasure',
+    choices: [
+        { text: 'Rozbít krystal Cepínem', target: 'end_hero', req: 'Horolezecký cepín' },
+        { text: 'Rozbít krystal kamenem/pěstí', target: 'end_hero_alt' },
+        { text: 'Očistit Lucernou', target: 'end_legend', req: 'Bludičkova lucerna' },
+        { text: 'Dotknout se rukou', target: 'end_evil' }
+    ]
+  },
+  end_hero: {
+    id: 'end_hero',
+    title: 'KONEC - HRDINA',
+    text: '„Za Skálopád!“ PRÁSK! Krystal exploduje pod úderem cepínu. Strop jeskyně se hroutí. Tuny kamení padají dolů.\n\nZatímco nahoře ve městě černá mlha mizí a lidé vidí slunce, ty zůstáváš dole. Tichý strážce, který položil život za světlo.',
+    imageType: 'victory',
+    choices: [{ text: 'Hrát znovu', target: 'reset' }]
+  },
+  end_hero_alt: {
+    id: 'end_hero_alt',
+    title: 'KONEC - OBĚŤ',
+    text: 'Bez zbraně, ale s odhodláním, vezmeš velký balvan a bušíš do krystalu. PRÁSK! Krystal exploduje. Uvolněná energie tě pohltí.\n\nZatímco nahoře ve městě černá mlha mizí a lidé vidí slunce, ty zůstáváš dole. Hrdina, který obětoval vše.',
+    imageType: 'victory',
+    choices: [{ text: 'Hrát znovu', target: 'reset' }]
+  },
+  end_legend: {
+    id: 'end_legend',
+    title: 'KONEC - LEGENDA',
+    text: 'Otevřeš lucernu. Světlo se střetne s temnotou. Krystal začne vibrovat a mění se na čirý zdroj světla. Černá mlha mizí.\n\nCesta domů je volná. Vracíš se do Skálopádu jako živoucí legenda.',
+    imageType: 'victory',
+    choices: [{ text: 'Hrát znovu', target: 'reset' }]
+  },
+  end_evil: {
+    id: 'end_evil',
+    title: 'KONEC - ZLO',
+    text: 'Dotkneš se krystalu. Temnota ti projede žilami. Bolest zmizí. Strach zmizí. Tvé oči zčernají.\n\nTemnota nezmizela. Našla si nového hostitele. Skálopád se nyní musí bát TEBE.',
+    imageType: 'skull',
+    choices: [{ text: 'Hrát znovu', target: 'reset' }]
+  },
+
+  game_over: {
+    id: 'game_over',
+    title: 'Konec hry',
+    text: 'Tvé rány jsou příliš hluboké. Svět ti mizí před očima...',
+    imageType: 'death',
+    choices: [
+      { text: 'Začít úplně znovu', target: 'reset' }
+    ]
+  }
+};
+
+export default function SilvarionGamebook() {
+  const [currentSceneId, setCurrentSceneId] = useState('start');
+  const [inventory, setInventory] = useState([]); 
+  const [gold, setGold] = useState(5); 
+  const [hearts, setHearts] = useState(5); 
+  const [closedLocations, setClosedLocations] = useState([]);
+  const [inputValue, setInputValue] = useState('');
+  
+  // Combat States
+  const [bossHp, setBossHp] = useState(5);
+  const [potionActive, setPotionActive] = useState(false);
+  const [armorUsed, setArmorUsed] = useState(false);
+  const [dodgedTurn, setDodgedTurn] = useState(false);
+  
+  // Logic Fix State
+  const [axeDroppedInLake, setAxeDroppedInLake] = useState(false);
+  
+  const rightColumnRef = useRef(null);
+
+  const consumables = ['Pivo', 'Sušené maso', 'Lektvar zdraví', 'Lektvar Štěstí', 'Sušená žába', 'Lektvar síly'];
+
+  useEffect(() => {
+    if (hearts <= 0 && currentSceneId !== 'game_over' && currentSceneId !== 'reset') {
+      setCurrentSceneId('game_over');
+    }
+  }, [hearts, currentSceneId]);
+
+  useEffect(() => {
+    if (rightColumnRef.current) {
+        rightColumnRef.current.scrollTop = 0;
+    }
+    setInputValue('');
+  }, [currentSceneId]);
+
+  // Special logic to handle Axe Retrieval in Scene 30
+  useEffect(() => {
+    if (currentSceneId === 'scene_30' && axeDroppedInLake) {
+        if (!inventory.includes('Horolezecký cepín')) {
+            setInventory(prev => [...prev, 'Horolezecký cepín']);
+        }
+    }
+  }, [currentSceneId, axeDroppedInLake, inventory]);
+
+  const handleUseItem = (item) => {
+    if (hearts >= 5) return; 
+
+    let healed = false;
+
+    if (item === 'Lektvar zdraví') {
+        setHearts(prev => Math.min(5, prev + 2));
+        healed = true;
+    } else if (item === 'Pivo' || item === 'Sušené maso') {
+        setHearts(prev => Math.min(5, prev + 1));
+        healed = true;
+    }
+
+    if (healed) {
+        setInventory(prev => {
+            const index = prev.indexOf(item);
+            if (index > -1) {
+                const newInv = [...prev];
+                newInv.splice(index, 1);
+                return newInv;
+            }
+            return prev;
+        });
+    }
+  };
+
+  const currentScene = storyData[currentSceneId] || storyData['start'];
+
+  const handleInputSubmit = (e) => {
+    e.preventDefault();
+    if (!inputValue.trim()) return;
+
+    const answer = inputValue.trim().toLowerCase();
+    const isCorrect = currentScene.correctAnswers.some(correct => correct.toLowerCase() === answer);
+
+    if (isCorrect) {
+        handleChoice({ 
+            target: currentScene.successTarget, 
+            lootGold: currentScene.winGold,
+            loot: currentScene.winLoot,
+            closeLoc: currentScene.id + '_solved' 
+        });
+    } else {
+        handleChoice({ 
+            target: currentScene.failureTarget, 
+            damage: currentScene.failDamage 
+        });
+    }
+  };
+
+  const handleChoice = (choice) => {
+    // Reset Game
+    if (choice.target === 'reset') {
+      setHearts(5);
+      setGold(5);
+      setInventory([]);
+      setClosedLocations([]);
+      setCurrentSceneId('start');
+      setBossHp(5);
+      setPotionActive(false);
+      setArmorUsed(false);
+      setDodgedTurn(false);
+      setAxeDroppedInLake(false);
+      return;
+    }
+
+    // Logic for Chapter 3 Entry Check
+    if (choice.target === 'ch3_check') {
+        if (inventory.includes('Vlčí kožich')) {
+            setCurrentSceneId('ch3_warm');
+        } else {
+            setHearts(prev => Math.max(0, prev - 2));
+            setCurrentSceneId('ch3_cold');
+        }
+        return;
+    }
+
+    // Redirect to Kostěj Beaten scene if all riddles solved
+    let nextTarget = choice.target;
+    if (nextTarget === 'tavern_kostej') {
+        const riddles = ['riddle_1_solved', 'riddle_2_solved', 'riddle_3_solved', 'riddle_4_solved', 'riddle_5_solved', 'riddle_6_solved', 'riddle_7_solved'];
+        const allSolved = riddles.every(r => closedLocations.includes(r));
+        if (allSolved) {
+            nextTarget = 'tavern_kostej_beaten';
+        }
+    }
+
+    // --- COMBAT LOGIC ---
+    if (choice.combat) {
+        // Player Turn Effects
+        if (choice.combat.damageBoss) {
+            setBossHp(prev => prev - choice.combat.damageBoss);
+        }
+        
+        if (choice.combat.removePotion) {
+             setInventory(prev => {
+                const index = prev.indexOf(choice.combat.removePotion);
+                if (index > -1) {
+                    const newInv = [...prev];
+                    newInv.splice(index, 1);
+                    return newInv;
+                }
+                return prev;
+            });
+        }
+
+        if (choice.combat.selfDamage) {
+            setHearts(prev => Math.max(0, prev - choice.combat.selfDamage));
+        }
+
+        if (choice.combat.dodgeNext) {
+            setDodgedTurn(true);
+        }
+
+        // Boss Turn Logic (Executed when entering the Boss Turn Scene)
+        if (choice.combat.bossAttack) {
+            // Check Critical Phase 3 Condition (Boss HP 1)
+            if (bossHp <= 1) {
+                // FIXED LOGIC: Does player actually have the axe?
+                if (inventory.includes('Horolezecký cepín')) {
+                    setCurrentSceneId('combat_axe_lost');
+                    setAxeDroppedInLake(true);
+                    setInventory(prev => {
+                        const index = prev.indexOf('Horolezecký cepín');
+                        if (index > -1) {
+                            const newInv = [...prev];
+                            newInv.splice(index, 1);
+                            return newInv;
+                        }
+                        return prev;
+                    });
+                } else {
+                    setCurrentSceneId('combat_stumble');
+                    setAxeDroppedInLake(false);
+                }
+                return;
+            }
+
+            // Normal Boss Attack Logic
+            if (!dodgedTurn) {
+                let dmgTaken = 1; // Default damage
+                if (inventory.includes('Runová zbroj') && !armorUsed) {
+                    dmgTaken = 0;
+                    setArmorUsed(true);
+                    setInventory(prev => {
+                        const index = prev.indexOf('Runová zbroj');
+                        if (index > -1) {
+                            const newInv = [...prev];
+                            newInv.splice(index, 1);
+                            return newInv;
+                        }
+                        return prev;
+                    });
+                } else if (inventory.includes('Trpasličí štít')) {
+                    dmgTaken = 1; 
+                }
+                setHearts(prev => Math.max(0, prev - dmgTaken));
+            } else {
+                // If dodged, reset flag for next round
+                setDodgedTurn(false);
+            }
+        }
+    }
+
+    // Standard Logic
+    if (choice.cost) {
+      if (gold >= choice.cost) {
+        setGold(prev => prev - choice.cost);
+      } else { return; }
+    }
+
+    if (choice.lootGold) setGold(prev => prev + choice.lootGold);
+
+    if (choice.removeItem) {
+        setInventory(prev => {
+            const index = prev.indexOf(choice.removeItem);
+            if (index > -1) {
+                const newInv = [...prev];
+                newInv.splice(index, 1);
+                return newInv;
+            }
+            return prev;
+        });
+    }
+
+    if (choice.closeLoc) setClosedLocations(prev => [...prev, choice.closeLoc]);
+
+    // Random Targets
+    if (choice.randomTargets) {
+        const rand = Math.random();
+        let cumulativeWeight = 0;
+        for (const rt of choice.randomTargets) {
+            cumulativeWeight += rt.weight;
+            if (rand <= cumulativeWeight) {
+                nextTarget = rt.target;
+                break;
+            }
+        }
+    }
+
+    setCurrentSceneId(nextTarget);
+
+    if (choice.loot) {
+      if (consumables.includes(choice.loot) || !inventory.includes(choice.loot)) {
+        setInventory(prev => [...prev, choice.loot]);
+      }
+    }
+    
+    if (choice.damage) {
+      setHearts(prev => Math.max(0, prev - choice.damage));
+    }
+  };
+
+  const visibleChoices = currentScene.choices ? currentScene.choices.filter(choice => {
+    if (choice.alwaysShow) return true;
+
+    if (choice.reqOpen && closedLocations.includes(choice.reqOpen)) return false;
+    if (choice.reqClosed && !closedLocations.includes(choice.reqClosed)) return false;
+    
+    // Check multiple requirements
+    if (choice.req && !inventory.includes(choice.req)) return false;
+    if (choice.req2 && !inventory.includes(choice.req2)) return false; // For combos
+    
+    if (choice.reqState === 'potionActive' && !potionActive) return false;
+
+    if (choice.loot && inventory.includes(choice.loot) && !consumables.includes(choice.loot)) {
+        return false;
+    }
+    return true;
+  }) : [];
+
+  const getItemIcon = (itemName) => {
+    switch(itemName) {
+      case 'Páčidlo': return <Hammer size={16} />;
+      case 'Horolezecký cepín': return <Mountain size={16} />;
+      case 'Pevné lano': return <Anchor size={16} />;
+      case 'Zpuchřelé lano': return <Anchor size={16} className="text-gray-500" />;
+      case 'Stará mapa dolů': return <MapIcon size={16} />;
+      case 'Rezavý klíč': return <Key size={16} />;
+      case 'Bludičkova lucerna': return <Flame size={16} className="text-blue-400" />;
+      case 'Ohořelá svíčka': return <Flame size={16} className="text-gray-400" />;
+      case 'Lektvar zdraví': return <FlaskConical size={16} className="text-red-500" />;
+      case 'Lektvar Štěstí': return <FlaskConical size={16} className="text-yellow-500" />;
+      case 'Kámen pro štěstí': return <CircleDot size={16} />;
+      case 'Sušená žába': return <Ghost size={16} />;
+      case 'Vlčí kožich': return <Shield size={16} />;
+      case 'Zlatý prsten': return <Gem size={16} className="text-yellow-500" />;
+      case 'Ozubené kolo': return <Settings size={16} />;
+      case 'Pivo': return <Beer size={16} />;
+      case 'Sušené maso': return <Utensils size={16} />;
+      case 'Stříbrný amulet': return <Pickaxe size={16} className="text-slate-400" />; 
+      case 'Lahvička s jedem': return <FlaskConical size={16} className="text-green-600" />;
+      case 'Lektvar síly': return <FlaskConical size={16} className="text-purple-600" />;
+      case 'Runová zbroj': return <Shield size={16} className="text-cyan-400" />;
+      case 'Trpasličí štít': return <Shield size={16} className="text-orange-400" />;
+      default: return <Backpack size={16} />;
+    }
+  };
+
+  const renderSceneVisual = (type) => {
+    const iconProps = { strokeWidth: 1.5, className: "text-[#2c1810] opacity-80" };
+    let content;
+    let title;
+    
+    switch(type) {
+      case 'town': title = "NÁMĚSTÍ"; content = <MapIcon size={80} {...iconProps} />; break;
+      case 'shop': title = "VETEŠNICTVÍ"; content = <Coins size={80} {...iconProps} />; break;
+      case 'inn': title = "KRČMA"; content = <Beer size={80} {...iconProps} />; break;
+      case 'herbalist': title = "ALCHYMIE"; content = <FlaskConical size={80} {...iconProps} />; break;
+      case 'alley': title = "ZÁKOUTÍ"; content = <Eye size={80} {...iconProps} />; break;
+      case 'house': title = "OPUŠTĚNÝ DŮM"; content = <DoorOpen size={80} {...iconProps} />; break;
+      case 'house_int': title = "INTERIÉR"; content = <Ghost size={80} {...iconProps} />; break;
+      case 'gate': title = "BRÁNA"; content = <Settings size={80} {...iconProps} />; break;
+      case 'crossroads': title = "ROZCESTÍ"; content = <Mountain size={80} {...iconProps} />; break;
+      case 'ruins': title = "ZŘÍCENINA"; content = <Anchor size={80} {...iconProps} />; break;
+      case 'cemetery': title = "HŘBITOV"; content = <Ghost size={80} {...iconProps} />; break;
+      case 'waterfall': title = "VODOPÁD"; content = <Waves size={80} {...iconProps} />; break;
+      case 'camp': title = "TÁBOR"; content = <Tent size={80} {...iconProps} />; break;
+      case 'mountains': title = "HORY"; content = <Mountain size={80} {...iconProps} />; break;
+      case 'icewall': title = "STĚNA"; content = <Snowflake size={80} {...iconProps} />; break;
+      case 'gap': title = "PROPAST"; content = <Footprints size={80} {...iconProps} />; break;
+      case 'hole': title = "DÍRA"; content = <Bug size={80} {...iconProps} />; break;
+      case 'statue': title = "SOCHA"; content = <Mountain size={80} {...iconProps} />; break;
+      case 'crater': title = "CHŘTÁN"; content = <CircleDot size={80} {...iconProps} />; break;
+      case 'spiral': title = "SPIRÁLA"; content = <Settings size={80} {...iconProps} />; break;
+      case 'mines': title = "DOLY"; content = <Pickaxe size={80} {...iconProps} />; break;
+      case 'dwarf_city': title = "MĚSTO"; content = <Shield size={80} {...iconProps} />; break;
+      case 'shaft': title = "ŠACHTA"; content = <ArrowRight size={80} {...iconProps} className="rotate-90" />; break;
+      case 'lake': title = "JEZERO"; content = <Waves size={80} {...iconProps} />; break;
+      case 'combat': title = "SOUBOJ"; content = <Sword size={80} {...iconProps} />; break;
+      case 'death': title = "SMRT"; content = <Skull size={80} {...iconProps} className="text-black" />; break;
+      case 'riddle': title = "HÁDANKA"; content = <HelpCircle size={80} {...iconProps} />; break;
+      case 'treasure': title = "NÁLEZ"; content = <Sparkles size={80} {...iconProps} className="text-yellow-600" />; break;
+      case 'victory': title = "ÚSPĚCH"; content = <Sun size={80} {...iconProps} className="text-amber-500 animate-pulse" />; break;
+      case 'skull': title = "NEBEZPEČÍ"; content = <Skull size={80} {...iconProps} />; break; 
+      case 'snowflake': title = "MRAZIVÁ CESTA"; content = <Snowflake size={80} {...iconProps} />; break; 
+      case 'ghost': title = "STRAŠIDLA"; content = <Ghost size={80} {...iconProps} />; break; 
+      default: title = "PŘÍBĚH"; content = <Scroll size={80} {...iconProps} />;
+    }
+
+    return (
+      <div className="w-full h-full bg-[#e8dec0] flex flex-col items-center justify-center relative overflow-hidden p-6">
+        <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/aged-paper.png')]"></div>
+        <div className="absolute inset-4 border-2 border-[#2c1810]/30 border-dashed rounded-lg"></div>
+        <div className="z-10 transform scale-100 transition-transform duration-700 hover:scale-110">
+            {content}
+        </div>
+        <div className="mt-6 text-xl font-cinzel tracking-[0.2em] text-[#2c1810] border-t border-b border-[#2c1810] py-2 text-center">
+            {title}
+        </div>
+        {currentSceneId.startsWith('combat') && (
+            <div className="absolute top-2 right-2 bg-black/80 text-white px-3 py-1 rounded font-bold">
+                BOSS HP: {bossHp}/5
+            </div>
+        )}
+      </div>
+    );
+  };
+
+  const healableItems = ['Lektvar zdraví', 'Pivo', 'Sušené maso'];
+
+  return (
+    <div className="min-h-screen w-full flex items-center justify-center font-serif bg-[#1a1a1a] p-2 md:p-4"
+         style={{
+           backgroundImage: `url('https://www.transparenttextures.com/patterns/wood-pattern.png')`,
+           backgroundColor: '#2a2a2a'
+         }}>
+      
+      <div className="w-full max-w-7xl aspect-video bg-[#f4e4bc] shadow-[0_0_50px_rgba(0,0,0,0.6)] relative flex flex-col overflow-hidden rounded-md border-8 border-[#1a110d]"
+           style={{
+             backgroundImage: "url('https://www.transparenttextures.com/patterns/aged-paper.png')"
+           }}>
+
+        <header className="h-12 flex-none bg-[#e6d5aa] border-b-4 border-double border-[#2c1810] flex justify-between items-center px-4 shadow-sm z-20">
+             <div className="flex items-center gap-3">
+                 <h1 className="text-lg md:text-xl font-black tracking-widest uppercase text-[#2c1810] font-cinzel">
+                    Skálopád
+                 </h1>
+                 <span className="hidden md:inline h-4 w-[1px] bg-[#2c1810]/30"></span>
+                 <span className="hidden md:inline text-xs italic font-crimson text-[#4a3b32] font-bold">Kapitola 1 - 5 (Finále)</span>
+             </div>
+
+             <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1 font-bold text-[#2c1810]" title="Zlaťáky">
+                    <Coins size={16} className="text-yellow-700" />
+                    <span>{gold}</span>
+                </div>
+
+                <div className="flex items-center gap-2" title="Životy">
+                    <div className="flex gap-1">
+                        {[...Array(5)].map((_, i) => (
+                        <Heart 
+                            key={i} 
+                            size={18} 
+                            fill={i < hearts ? "#8b0000" : "transparent"}
+                            className={i < hearts ? "text-[#8b0000] drop-shadow-sm" : "text-[#2c1810]/20"} 
+                        />
+                        ))}
+                    </div>
+                </div>
+             </div>
+        </header>
+
+        <div className="flex-1 flex overflow-hidden">
+            {/* LEVÝ SLOUPEC (1/3) */}
+            <div className="w-1/3 border-r-4 border-double border-[#2c1810] relative shadow-[5px_0_15px_rgba(0,0,0,0.1)] z-10 hidden md:block group">
+                {renderSceneVisual(currentScene.imageType)}
+            </div>
+
+            {/* PRAVÝ SLOUPEC (2/3) */}
+            <div className="w-full md:w-2/3 flex flex-col relative bg-[#f4e4bc]">
+                 <div className="flex-1 overflow-y-auto p-4 custom-scrollbar" ref={rightColumnRef}>
+                    <h2 className="text-2xl font-bold text-[#2c1810] mb-3 font-cinzel border-b border-[#2c1810]/20 pb-2">
+                        {currentScene.title}
+                    </h2>
+                    
+                    <p className="text-lg text-[#2c1810] leading-snug mb-4 font-crimson text-justify whitespace-pre-line">
+                        {currentSceneId === 'scene_30' && axeDroppedInLake 
+                            ? 'Strážce Hlubin se rozpadá na černý sliz. Hladina se uklidňuje. V mělké vodě se zaleskne tvůj Cepín. Vylovíš ho, otřeš z něj sliz a vystoupíš na ostrůvek k Temnému Krystalu.'
+                            : currentScene.text}
+                    </p>
+
+                    <div className="space-y-2 mt-auto pt-4">
+                        {/* VSTUPNÍ POLE PRO HÁDANKY */}
+                        {currentScene.inputType && (
+                            <form onSubmit={handleInputSubmit} className="mb-4">
+                                <label className="block text-[#2c1810] font-cinzel font-bold mb-2 text-sm">
+                                    {currentScene.inputType === 'number' ? 'Zadej číslo:' : 'Tvá odpověď:'}
+                                </label>
+                                <div className="flex gap-2">
+                                    <input 
+                                        type={currentScene.inputType === 'number' ? 'number' : 'text'}
+                                        value={inputValue}
+                                        onChange={(e) => setInputValue(e.target.value)}
+                                        className="flex-1 p-2 bg-[#fff9e6] border border-[#2c1810] rounded font-cinzel text-[#2c1810] focus:outline-none focus:ring-2 focus:ring-[#8b0000]/30"
+                                        placeholder={currentScene.inputType === 'number' ? '0' : 'Napiš odpověď...'}
+                                        autoFocus
+                                    />
+                                    <button 
+                                        type="submit"
+                                        className="bg-[#2c1810] text-[#e6d5aa] px-4 py-2 rounded font-cinzel font-bold hover:bg-[#4a3b32] transition-colors"
+                                    >
+                                        POTVRDIT
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+
+                        {/* STANDARDNÍ VOLBY */}
+                        {visibleChoices.map((choice, index) => {
+                            const canAfford = !choice.reqGold || gold >= choice.reqGold;
+                            return (
+                                <button
+                                key={index}
+                                onClick={() => canAfford && handleChoice(choice)}
+                                disabled={!canAfford}
+                                className={`w-full text-left p-0.5 group relative transition-transform duration-200 ${canAfford ? 'active:scale-[0.99] hover:translate-x-1' : 'opacity-60 cursor-not-allowed grayscale'}`}
+                                >
+                                <div className={`absolute inset-0 border border-[#2c1810] rounded bg-[#fff9e6] shadow-sm ${canAfford ? 'group-hover:shadow-md' : ''} transition-all`}></div>
+                                <div className="relative p-3 pl-4 pr-8 flex items-center justify-between font-cinzel font-bold text-[#2c1810] z-10 text-sm">
+                                    <span className={!canAfford ? "text-[#2c1810]/70" : ""}>
+                                        {choice.text}
+                                        {choice.cost && <span className={canAfford ? "text-red-800 ml-2" : "text-red-800/50 ml-2"}>(-{choice.cost} zl)</span>}
+                                        {choice.lootGold && <span className="text-green-800 ml-2">(+{choice.lootGold} zl)</span>}
+                                    </span>
+                                    {canAfford && <ArrowRight className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-[#8b0000]" size={16} strokeWidth={2.5} />}
+                                </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                 </div>
+
+                 <div className="flex-none bg-[#e6d5aa] border-t-4 border-double border-[#2c1810] p-3 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
+                    <div className="font-bold font-cinzel text-[10px] tracking-wider text-[#2c1810] mb-2 flex items-center gap-2 uppercase opacity-80">
+                        <Backpack size={12}/> Vybavení
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2">
+                        {inventory.length === 0 ? (
+                            <div className="text-[#2c1810]/50 italic font-crimson text-xs p-1">Prázdný batoh...</div>
+                        ) : (
+                            inventory.map((item, i) => (
+                                <div key={i} className="flex items-center gap-1.5 bg-[#f4e4bc] border border-[#2c1810] px-2 py-1 rounded shadow-sm hover:bg-white transition-colors cursor-default">
+                                    <div className="text-[#2c1810] opacity-70">
+                                        {getItemIcon(item)}
+                                    </div>
+                                    <span className="font-cinzel font-bold text-xs text-[#2c1810]">{item}</span>
+                                    
+                                    {healableItems.includes(item) && hearts < 5 && (
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); handleUseItem(item); }}
+                                            className="ml-1 px-1.5 py-0.5 bg-red-100 hover:bg-red-200 border border-red-800 text-red-900 text-[10px] font-bold rounded transition-colors animate-pulse"
+                                        >
+                                            POUŽÍT
+                                        </button>
+                                    )}
+                                </div>
+                            ))
+                        )}
+                    </div>
+                 </div>
+            </div>
+        </div>
+      </div>
+      
+      <div className="fixed inset-0 pointer-events-none opacity-[0.03] mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] z-50"></div>
+    </div>
+  );
+}
